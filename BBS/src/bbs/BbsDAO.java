@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 
 public class BbsDAO {
 	// dao : 데이터베이스 접근 객체의 약자로서
@@ -58,21 +59,62 @@ public class BbsDAO {
 
 	// 실제로 글을 작성하는 함수
 	public int write(String bbsTitle, String userID, String bbsContent) {
-		String SQL = "INSERT INTO BBS VLAUES (?, ?, ?, ?, ?, ?)"; // 현재의 시간을 가져오는 SQL문
+		String SQL = "INSERT INTO BBS VALUES (?, ?, ?, ?, ?, ?)"; // 현재의 시간을 가져오는 SQL문
 		try {
 			PreparedStatement pstmt = conn.prepareStatement(SQL); // 실행준비 단계로 준비
-			pstmt.setInt(1, getNext());     // bbsID
-			pstmt.setString(2, bbsTitle);   // bbsTttle
-			pstmt.setString(3, userID);     // bbsTttle
-			pstmt.setString(4, getDate());  // bbsDate
+			pstmt.setInt(1, getNext()); // bbsID
+			pstmt.setString(2, bbsTitle); // bbsTttle
+			pstmt.setString(3, userID); // bbsTttle
+			pstmt.setString(4, getDate()); // bbsDate
 			pstmt.setString(5, bbsContent); // bbsContent
-			pstmt.setInt(6, 1);            // bbsAvailabe 입력단계이므로 무조건 1
-			
+			pstmt.setInt(6, 1); // bbsAvailabe 입력단계이므로 무조건 1
+
 			return pstmt.executeUpdate();
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return -1; // Insert 오류
+	}
+
+	public ArrayList<Bbs> getList(int pageNumber) {
+		String SQL = "SELECT * FROM BBS WHERE bbsID < ? AND bbsAvailable=1 ORDER BY bbiID DESC LIMIT 10"; // 가져오는 SQL문
+		ArrayList<Bbs> list = new ArrayList<Bbs>();
+		try {
+			PreparedStatement pstmt = conn.prepareStatement(SQL); // 실행준비 단계로 준비
+			pstmt.setInt(1, getNext() - (pageNumber - 1) * 10);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				Bbs bbs = new Bbs();
+				bbs.setBbsID(rs.getInt(1)); // bbsID
+				bbs.setBbsTitle(rs.getString(2)); // bbsTttle
+				bbs.setUserID(rs.getString(3)); // bbsTttle
+				bbs.setBbsDate(rs.getString(4)); // bbsDate
+				bbs.setBbsContent(rs.getString(5)); // bbsContent
+				bbs.setBbsAvailable(rs.getInt(6)); // bbsAvailabe
+				list.add(bbs);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return list; // Insert 오류
+	}
+
+	public boolean nextPage(int pageNumber) { // 다음 페이지 처리를 위해서
+		String SQL = "SELECT * FROM BBS WHERE bbsID < ? AND bbsAvailable=1"; // 가져오는 SQL문
+		try {
+			PreparedStatement pstmt = conn.prepareStatement(SQL); // 실행준비 단계로 준비
+			pstmt.setInt(1, getNext() - (pageNumber - 1) * 10);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				return true; // 다음 페이지가 있으면
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false; // 다음 페이지가 없으면
+
 	}
 }
